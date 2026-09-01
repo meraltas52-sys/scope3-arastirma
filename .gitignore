@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Çalışma zamanı durumu ve büyük ikili veriler — tekrar üretilebilir, repoya girmez
+data/progress.json
+data/cache/*.json
+data/downloads/**/*.pdf
+data/output/*.xlsx
+
+!data/cache/.gitkeep
+!data/downloads/.gitkeep
+!data/output/.gitkeep

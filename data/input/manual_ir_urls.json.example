@@ -1,0 +1,9 @@
+{
+  "_aciklama": "inventory.py'nin otomatik keşiften ÖNCE kullandığı elle doğrulanmış IR URL listesi. Bu dosyayı 'manual_ir_urls.json' olarak kopyalayıp doldurun (o dosya adı .gitignore'da değildir, isterseniz commit edebilirsiniz).",
+  "AKBNK": {
+    "resmi_web_sitesi": "https://ornek-sirket.com.tr",
+    "yatirimci_iliskileri_url": "https://ornek-sirket.com.tr/yatirimci-iliskileri",
+    "dogrulandi": false,
+    "not": "Bu sadece ŞEMA örneğidir, gerçek bir URL DEĞİLDİR. Kendi elle doğruladığınız URL'yi girip dogrulandi:true yapın."
+  }
+}
