@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from dataclasses import asdict
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -40,6 +41,21 @@ try:
     from bs4 import BeautifulSoup
 except ImportError:  # pragma: no cover - requirements.txt'de var, savunma amaçlı
     BeautifulSoup = None
+
+
+# Tarayıcı gibi görünen istek başlıkları — bazı sunucular (örn. KGK) sade
+# "User-Agent" içeren istekleri bot olarak algılayıp 500/403 dönebiliyor.
+BROWSER_HEADERS = {
+    "User-Agent": config.HTTP_USER_AGENT,
+    "Accept": "application/pdf,application/octet-stream,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Referer": "https://www.kgk.gov.tr/",
+    "Connection": "keep-alive",
+}
+
+# İstekler arası minimum bekleme (saniye) — hızlı art arda istek atmak
+# bazı sunucularda geçici engellemeye/500 hatasına yol açabiliyor.
+REQUEST_DELAY_SECONDS = 1.5
 
 
 # --------------------------------------------------------------------------
@@ -144,7 +160,8 @@ def discover_pdf_links_from_ir_page(
 ) -> list[str]:
     """IR sayfasını çeker ve .pdf ile biten bağlantıları döner. Ağ kapalıysa [] döner."""
     try:
-        resp = session.get(ir_url, timeout=timeout, headers={"User-Agent": config.HTTP_USER_AGENT})
+        time.sleep(REQUEST_DELAY_SECONDS)
+        resp = session.get(ir_url, timeout=timeout, headers=BROWSER_HEADERS)
         resp.raise_for_status()
     except requests.RequestException as exc:
         logger.debug("IR sayfası alınamadı (%s): %s", ir_url, exc)
@@ -267,10 +284,11 @@ def download_report(ref: ReportRef, session: requests.Session) -> ReportRef:
     last_exc: Exception | None = None
     for attempt in range(1, config.HTTP_MAX_RETRIES + 1):
         try:
+            time.sleep(REQUEST_DELAY_SECONDS)
             resp = session.get(
                 ref.kaynak_url,
                 timeout=config.HTTP_TIMEOUT_SECONDS,
-                headers={"User-Agent": config.HTTP_USER_AGENT},
+                headers=BROWSER_HEADERS,
                 stream=True,
             )
             resp.raise_for_status()
@@ -293,8 +311,6 @@ def download_report(ref: ReportRef, session: requests.Session) -> ReportRef:
                 attempt, config.HTTP_MAX_RETRIES, ref.kod, ref.yil, ref.rapor_turu, exc,
             )
             if attempt < config.HTTP_MAX_RETRIES:
-                import time
-
                 time.sleep(config.HTTP_RETRY_BACKOFF_SECONDS * attempt)
 
     ref.durum = ReportStatus.HATA
