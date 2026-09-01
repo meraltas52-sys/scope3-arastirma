@@ -101,7 +101,20 @@ def load_tsrs_envanteri_refs(companies_by_kod: dict[str, Company], path=config.T
         baslik = row[idx["Rapor Başlığı"]] or ""
         url = row[idx["Kaynak URL"]]
         onerilen_kod = (row[idx.get("Önerilen BIST Kodu", -1)] or "").strip().upper() if idx.get("Önerilen BIST Kodu") is not None else ""
-        if not yil or not url or onerilen_kod not in companies_by_kod:
+               if not yil or not url or onerilen_kod not in companies_by_kod:
+            continue
+        # Sanity check: rapor başlığı ile şirket ünvanı arasında en az bir
+        # anlamlı ortak kelime olmalı - yoksa "Önerilen BIST Kodu" sütunundaki
+        # otomatik eşleştirme hatalı olabilir (örn. TTKOM -> Kuveyt Türk gibi).
+        company_unvan = companies_by_kod[onerilen_kod].unvan.upper()
+        baslik_upper = str(baslik).upper()
+        company_words = {w for w in re.split(r"[^A-ZÇĞİÖŞÜ0-9]+", company_unvan) if len(w) > 3
+                          and w not in {"A.Ş", "A.O", "SANAYİ", "TİCARET", "HOLDİNG", "VE"}}
+        if company_words and not any(w in baslik_upper for w in company_words):
+            logger.warning(
+                "Şüpheli eşleşme atlandı: %s koduna önerilen rapor '%s' başlıkla uyuşmuyor.",
+                onerilen_kod, baslik,
+            )
             continue
         refs.append(
             ReportRef(
