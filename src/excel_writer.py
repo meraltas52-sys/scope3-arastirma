@@ -97,10 +97,10 @@ def _write_ozet(
 ) -> None:
     headers = [
         "Şirket Kodu", "Şirket Ünvanı", "Yıl", "Rapor Türü", "Rapor Durumu",
-        "Olgunluk Etiketi", "Kategori Kapsamı (1-15)", "Gerekçe", "Kaynak Türü",
-        "Kaynak URL", "Manuel Teyit Notu",
+        "TSRS Uyumlu", "Olgunluk Etiketi", "Kategori Kapsamı (1-15)", "Gerekçe",
+        "Kaynak Türü", "Kaynak URL", "Manuel Teyit Notu",
     ]
-    widths = [12, 45, 8, 20, 14, 24, 22, 45, 16, 45, 30]
+    widths = [12, 45, 8, 20, 14, 13, 24, 22, 45, 16, 45, 30]
     _write_header(ws, headers, widths)
 
     row_idx = 2
@@ -108,23 +108,30 @@ def _write_ozet(
         durum = ref.durum.value if ref else ReportStatus.BULUNMADI.value
         etiket = maturity.etiket.value if maturity else (OlgunlukEtiketi.ACIKLAMA_YOK.value if durum == ReportStatus.INDIRILDI.value else "-")
         kategori_str = ", ".join(f"Kategori {n}" for n in maturity.kategori_kapsami) if maturity else ""
+        if durum != ReportStatus.INDIRILDI.value:
+            tsrs_str = "-"
+        elif ref.tsrs_uyumlu is None:
+            tsrs_str = "Bilinmiyor"
+        else:
+            tsrs_str = "Evet" if ref.tsrs_uyumlu else "Hayır"
 
         ws.cell(row=row_idx, column=1, value=company.kod)
         ws.cell(row=row_idx, column=2, value=company.unvan)
         ws.cell(row=row_idx, column=3, value=yil)
         ws.cell(row=row_idx, column=4, value=rapor_turu)
         ws.cell(row=row_idx, column=5, value=durum)
-        ws.cell(row=row_idx, column=6, value=etiket)
-        ws.cell(row=row_idx, column=7, value=kategori_str)
-        gerekce_cell = ws.cell(row=row_idx, column=8, value=maturity.gerekce if maturity else "")
+        ws.cell(row=row_idx, column=6, value=tsrs_str)
+        ws.cell(row=row_idx, column=7, value=etiket)
+        ws.cell(row=row_idx, column=8, value=kategori_str)
+        gerekce_cell = ws.cell(row=row_idx, column=9, value=maturity.gerekce if maturity else "")
         gerekce_cell.alignment = _WRAP
-        ws.cell(row=row_idx, column=9, value=ref.kaynak_turu if ref else "")
+        ws.cell(row=row_idx, column=10, value=ref.kaynak_turu if ref else "")
         if ref and ref.kaynak_url:
-            url_cell = ws.cell(row=row_idx, column=10, value=ref.kaynak_url)
+            url_cell = ws.cell(row=row_idx, column=11, value=ref.kaynak_url)
             url_cell.hyperlink = ref.kaynak_url
             url_cell.font = Font(color="FF0563C1", underline="single")
         note = maturity.manuel_teyit_notu if maturity else (config.MATURITY_REVIEW_NOTE if durum == ReportStatus.INDIRILDI.value else "")
-        ws.cell(row=row_idx, column=11, value=note)
+        ws.cell(row=row_idx, column=12, value=note)
         row_idx += 1
 
 

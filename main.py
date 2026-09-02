@@ -22,10 +22,12 @@ from __future__ import annotations
 import argparse
 import logging
 
+import requests
+
 import config
 from src.downloader import load_manifest, run as run_downloader
 from src.excel_writer import write_workbook
-from src.inventory import load_bist100, load_company_reference, run as run_inventory
+from src.inventory import load_bist100, load_company_reference, run as run_inventory, search_company_website
 from src.maturity_classifier import classify_all
 from src.models import ReportStatus
 from src.progress import ProgressStore
@@ -62,7 +64,13 @@ def main() -> None:
 
     if "inventory" in stages_to_run:
         _print_banner(f"1/4 inventory — {len(companies)} şirket, parça boyutu {args.chunk_size}")
-        run_inventory(companies, progress_store, chunk_size=args.chunk_size)
+        _search_session = requests.Session()
+        run_inventory(
+            companies,
+            progress_store,
+            chunk_size=args.chunk_size,
+            search_fn=lambda company: search_company_website(company, _search_session),
+        )
 
     if "download" in stages_to_run:
         _print_banner("2/4 downloader — rapor indirme")
@@ -89,6 +97,7 @@ def _print_summary(companies, manifest) -> None:
     indirildi = sum(1 for r in manifest if r.durum == ReportStatus.INDIRILDI)
     rapor_yok = sum(1 for r in manifest if r.durum == ReportStatus.BULUNMADI)
     hata = sum(1 for r in manifest if r.durum == ReportStatus.HATA)
+    indirilecek = sum(1 for r in manifest if r.durum == ReportStatus.INDIRILECEK)
     beklenen_toplam = len(companies) * len(config.SCAN_YEARS) * len(config.REPORT_TYPES)
 
     _print_banner("ÖZET")
@@ -96,6 +105,12 @@ def _print_summary(companies, manifest) -> None:
     print(f"İndirildi : {indirildi}")
     print(f"Rapor Yok : {rapor_yok}")
     print(f"Hata      : {hata}")
+    if indirilecek:
+        # Beklenmiyor: her kombinasyon run() sonunda nihai bir duruma
+        # (İndirildi/Rapor Yok/Hata) ulaşmalı. Görülüyorsa downloader.run()
+        # bir kombinasyonu hiç işlemeden "İndirilecek" yer tutucusunda
+        # bırakmış demektir (bkz. src/downloader.py'deki stuck_restored).
+        print(f"UYARI     : {indirilecek} kombinasyon hâlâ 'İndirilecek' durumunda kaldı (beklenmiyordu)")
     print(f"Çıktı     : {config.OUTPUT_XLSX}")
 
 

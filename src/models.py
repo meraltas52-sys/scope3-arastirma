@@ -50,6 +50,7 @@ class ReportRef:
     yerel_dosya: str | None = None
     durum: ReportStatus = ReportStatus.BULUNMADI
     hata_mesaji: str | None = None
+    tsrs_uyumlu: bool | None = None  # PDF'in ilk sayfalarında "TSRS" ibaresi bulundu mu (bilinmiyorsa None)
 
     @property
     def key(self) -> tuple[str, int, str]:

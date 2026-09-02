@@ -168,7 +168,20 @@ def save_findings(findings: list[Finding], path=config.FINDINGS_CACHE_FILE) -> N
 
 def run(manifest: list[ReportRef], progress_store: ProgressStore, chunk_size: int = config.CHUNK_SIZE) -> list[Finding]:
     indirilenler = [r for r in manifest if r.durum == ReportStatus.INDIRILDI and r.yerel_dosya]
+
+    # Önceki çalıştırmanın bulgu önbelleğiyle başla: run_in_chunks,
+    # progress.json'da zaten "tamamlandı" işaretli raporları process_fn'i
+    # hiç çağırmadan atlar (kaldığı yerden devam). all_findings BOŞTAN
+    # başlatılırsa, atlanan (önceden taranmış) raporların bulguları hiç
+    # eklenmez ve dosya sonundaki save_findings çağrısı önbelleği SADECE bu
+    # çalıştırmada gerçekten işlenen raporlarla değiştirir - önceki
+    # çalıştırmalardaki tüm bulgular sessizce silinir (bkz. downloader.py
+    # run()'daki aynı sınıftan hataya uygulanan previous_manifest_by_key
+    # düzeltmesi).
     all_findings: dict[str, list[Finding]] = {}
+    for finding in load_findings():
+        key = "|".join(map(str, (finding.kod, finding.yil, finding.rapor_turu)))
+        all_findings.setdefault(key, []).append(finding)
 
     def process(ref: ReportRef) -> None:
         key = "|".join(map(str, ref.key))

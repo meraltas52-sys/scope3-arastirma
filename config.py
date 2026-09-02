@@ -47,6 +47,27 @@ HTTP_MAX_RETRIES = 3
 HTTP_RETRY_BACKOFF_SECONDS = 2.0
 HTTP_MIN_PDF_BYTES = 2048  # bundan küçük indirilen dosya "bozuk" sayılır
 
+# IR sitesi taraması: ana sayfadan başlayıp rapor/yatırımcı ilişkileri ile
+# alakalı görünen bağlantıları izleyerek en fazla kaç sayfa ziyaret edilsin
+# (best-first). Şirket başına tek seferlik maliyet olduğu için (bkz.
+# downloader.build_ir_page_refs) nispeten cömert tutulabilir.
+IR_CRAWL_MAX_PAGES = 8
+
+# KGK Rapor Envanteri (config.TSRS_ENVANTERI_XLSX) kaynaklı indirmeler:
+# KGK, "Önerilen BIST Kodu" ile önceden başlık-eşleştirmesi yapılmış gerçek
+# TSRS raporlarını içerdiği için IR sitesi taramasına göre ÖNCELİKLİ/daha
+# güvenilir kaynaktır (bkz. build_ir_page_refs'in existing_keys ile KGK'da
+# zaten olan kombinasyonları atlaması). Bu ortamdan kgk.gov.tr'ye giden
+# isteklerin çoğu 500 Internal Server Error ile sonuçlanıyor (WAF/IP engeli
+# olabilir) - kaynağı tamamen KAPATMAK yerine (bu, gerçek TSRS raporlarını
+# kaçırmaya sebep olur) KGK_MAX_RETRIES/KGK_TIMEOUT_SECONDS ile hızlı-
+# başarısızlık politikası uygulanır: tek deneme + kısa zaman aşımı, böylece
+# hem WAF engeli geçiciyse yakalanır hem de başarısız denemeler 3×30sn yerine
+# yalnızca ~8sn sürer.
+ENABLE_KGK_SOURCE = True
+KGK_MAX_RETRIES = 1
+KGK_TIMEOUT_SECONDS = 8.0
+
 # --- text_miner.py: anahtar kelime / desen tanımları ---
 # Sayfa bağlamı alıntı uzunluğu (karakter, eşleşmenin etrafında yaklaşık ortalanmış)
 CONTEXT_CHARS = 300
