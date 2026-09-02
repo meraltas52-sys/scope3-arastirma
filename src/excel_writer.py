@@ -44,12 +44,26 @@ def _company_unvan(companies_by_kod: dict[str, Company], kod: str) -> str:
 # Sekme 1: Ham Bulgular
 # --------------------------------------------------------------------------
 
-def _write_ham_bulgular(ws: Worksheet, companies_by_kod: dict[str, Company], findings: list[Finding]) -> None:
+def _tsrs_str(ref: ReportRef | None) -> str:
+    if ref is None or ref.durum != ReportStatus.INDIRILDI:
+        return "-"
+    if ref.tsrs_uyumlu is None:
+        return "Bilinmiyor"
+    return "Evet" if ref.tsrs_uyumlu else "Hayır"
+
+
+def _write_ham_bulgular(
+    ws: Worksheet,
+    companies_by_kod: dict[str, Company],
+    findings: list[Finding],
+    manifest_by_key: dict[tuple[str, int, str], ReportRef],
+) -> None:
     headers = [
         "Şirket Kodu", "Şirket Ünvanı", "Yıl", "Rapor Türü", "Sayfa No",
         "Eşleşen Terim", "Bağlam Alıntısı", "Olgunluk Sinyali", "Kategori No",
+        "TSRS Uyumlu mu?",
     ]
-    widths = [12, 45, 8, 20, 10, 22, 70, 24, 12]
+    widths = [12, 45, 8, 20, 10, 22, 70, 24, 12, 14]
     _write_header(ws, headers, widths)
 
     row_idx = 2
@@ -64,6 +78,8 @@ def _write_ham_bulgular(ws: Worksheet, companies_by_kod: dict[str, Company], fin
         alinti_cell.alignment = _WRAP
         ws.cell(row=row_idx, column=8, value=tag_finding(f).value)
         ws.cell(row=row_idx, column=9, value=f.kategori_no)
+        ref = manifest_by_key.get((f.kod, f.yil, f.rapor_turu))
+        ws.cell(row=row_idx, column=10, value=_tsrs_str(ref))
         row_idx += 1
 
 
@@ -97,7 +113,7 @@ def _write_ozet(
 ) -> None:
     headers = [
         "Şirket Kodu", "Şirket Ünvanı", "Yıl", "Rapor Türü", "Rapor Durumu",
-        "TSRS Uyumlu", "Olgunluk Etiketi", "Kategori Kapsamı (1-15)", "Gerekçe",
+        "TSRS Uyumlu mu?", "Olgunluk Etiketi", "Kategori Kapsamı (1-15)", "Gerekçe",
         "Kaynak Türü", "Kaynak URL", "Manuel Teyit Notu",
     ]
     widths = [12, 45, 8, 20, 14, 13, 24, 22, 45, 16, 45, 30]
@@ -108,12 +124,7 @@ def _write_ozet(
         durum = ref.durum.value if ref else ReportStatus.BULUNMADI.value
         etiket = maturity.etiket.value if maturity else (OlgunlukEtiketi.ACIKLAMA_YOK.value if durum == ReportStatus.INDIRILDI.value else "-")
         kategori_str = ", ".join(f"Kategori {n}" for n in maturity.kategori_kapsami) if maturity else ""
-        if durum != ReportStatus.INDIRILDI.value:
-            tsrs_str = "-"
-        elif ref.tsrs_uyumlu is None:
-            tsrs_str = "Bilinmiyor"
-        else:
-            tsrs_str = "Evet" if ref.tsrs_uyumlu else "Hayır"
+        tsrs_str = _tsrs_str(ref)
 
         ws.cell(row=row_idx, column=1, value=company.kod)
         ws.cell(row=row_idx, column=2, value=company.unvan)
@@ -214,7 +225,7 @@ def write_workbook(
     wb = Workbook()
     wb.remove(wb.active)
 
-    _write_ham_bulgular(wb.create_sheet("Ham Bulgular"), companies_by_kod, findings)
+    _write_ham_bulgular(wb.create_sheet("Ham Bulgular"), companies_by_kod, findings, manifest_by_key)
     _write_ozet(wb.create_sheet("Şirket-Yıl-RaporTürü Özeti"), companies, manifest_by_key, maturity_by_key)
     _write_kategori_matrisi(wb.create_sheet("Kategori 1-15 Matrisi"), companies, manifest_by_key, maturity_by_key)
     _write_eksik_raporlar(wb.create_sheet("Eksik Raporlar"), companies, manifest_by_key)
