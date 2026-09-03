@@ -129,7 +129,17 @@ def mine_pdf(path: Path, kod: str, yil: int, rapor_turu: str) -> list[Finding]:
             page_text = page.get_text()
             if not page_text.strip():
                 continue
-            low_text = page_text.lower()
+            # DİKKAT: düz .lower() KULLANMA - Python'un varsayılan Unicode
+            # case-fold'u Türkçe büyük nokta'lı İ'yi (U+0130) TEK karakterden
+            # İKİ karaktere ('i' + birleştirici nokta, U+0307) genişletir. Bu,
+            # sayfadaki her İ'den sonra low_text'i page_text'e göre 1 karakter
+            # kaydırıp aralarındaki hizalamayı bozuyordu - low_text üzerinde
+            # bulunan eşleşme index'i (idx), page_text üzerinden yanlış yeri
+            # dilimleyip "Eşleşen Terim"i (kısa dilim olduğu için tamamen
+            # anlamsız hale gelecek şekilde) ve "Bağlam Alıntısı"nı (geniş
+            # pencere olduğu için daha az fark edilir şekilde) bozuyordu. Önce
+            # İ'yi TEK karakter 'i'ye çevirip hizalamayı koruyoruz.
+            low_text = page_text.replace("İ", "i").lower()
 
             core = _find_keyword_findings(page_text, low_text, config.SCOPE3_KEYWORDS, kod, yil, rapor_turu, sayfa_no)
             kategori = _find_category_findings(page_text, low_text, kod, yil, rapor_turu, sayfa_no)
