@@ -30,9 +30,22 @@ OUTPUT_XLSX = OUTPUT_DIR / "kapsam3_bulgular.xlsx"
 SCAN_YEARS = [2023, 2024, 2025]
 CUTOFF_DATE = "2026-09-01"  # bu tarihe kadar yayımlanmış her versiyon dahil
 
+# Rapor Türü artık 3 kategoriye ayrılır (bkz. src/downloader.infer_report_type):
+#   1. TSRS Uyumlu Sürdürülebilirlik Raporu — başlığında "TSRS" geçen VEYA
+#      PDF'in ilk 3 sayfasında TSRS standardına açık atıf yapan.
+#   2. Sürdürülebilirlik Raporu (Gönüllü) — sürdürülebilirlik/entegre raporu
+#      ama TSRS'ye atıf yapmıyor (örn. sadece GRI bazlı).
+#   3. Faaliyet Raporu — değişmedi.
+# Bir şirket-yıl için bu 3 kategoriden birden fazlası (farklı belgeler olarak)
+# bulunabilir - excel_writer.py bunları ayrı satırlar olarak listeler.
+REPORT_TYPE_TSRS = "TSRS Uyumlu Sürdürülebilirlik Raporu"
+REPORT_TYPE_GONULLU = "Sürdürülebilirlik Raporu (Gönüllü)"
+REPORT_TYPE_FAALIYET = "Faaliyet Raporu"
+
 REPORT_TYPES = [
-    "Sürdürülebilirlik Raporu",
-    "Faaliyet Raporu",
+    REPORT_TYPE_TSRS,
+    REPORT_TYPE_GONULLU,
+    REPORT_TYPE_FAALIYET,
 ]
 
 # Şirket başına parça (chunk) boyutu — limit aşımlarını önlemek için

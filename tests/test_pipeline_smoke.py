@@ -74,10 +74,10 @@ def run_smoke_test() -> None:
     _make_pdf(pdf3, ["Bu raporda sadece Kapsam 1 ve Kapsam 2 emisyonları yer almaktadır."])
 
     manifest = [
-        ReportRef(kod="TEST1", yil=2024, rapor_turu="Sürdürülebilirlik Raporu", yerel_dosya=str(pdf1), durum=ReportStatus.INDIRILDI, kaynak_turu="TEST"),
-        ReportRef(kod="TEST2", yil=2024, rapor_turu="Sürdürülebilirlik Raporu", yerel_dosya=str(pdf2), durum=ReportStatus.INDIRILDI, kaynak_turu="TEST"),
-        ReportRef(kod="TEST3", yil=2024, rapor_turu="Sürdürülebilirlik Raporu", yerel_dosya=str(pdf3), durum=ReportStatus.INDIRILDI, kaynak_turu="TEST"),
-        ReportRef(kod="TEST1", yil=2023, rapor_turu="Faaliyet Raporu", durum=ReportStatus.BULUNMADI),
+        ReportRef(kod="TEST1", yil=2024, rapor_turu=config.REPORT_TYPE_GONULLU, yerel_dosya=str(pdf1), durum=ReportStatus.INDIRILDI, kaynak_turu="TEST"),
+        ReportRef(kod="TEST2", yil=2024, rapor_turu=config.REPORT_TYPE_GONULLU, yerel_dosya=str(pdf2), durum=ReportStatus.INDIRILDI, kaynak_turu="TEST"),
+        ReportRef(kod="TEST3", yil=2024, rapor_turu=config.REPORT_TYPE_GONULLU, yerel_dosya=str(pdf3), durum=ReportStatus.INDIRILDI, kaynak_turu="TEST"),
+        ReportRef(kod="TEST1", yil=2023, rapor_turu=config.REPORT_TYPE_FAALIYET, durum=ReportStatus.BULUNMADI),
     ]
 
     all_findings = []

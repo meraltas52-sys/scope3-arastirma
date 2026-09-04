@@ -44,14 +44,6 @@ def _company_unvan(companies_by_kod: dict[str, Company], kod: str) -> str:
 # Sekme 1: Ham Bulgular
 # --------------------------------------------------------------------------
 
-def _tsrs_str(ref: ReportRef | None) -> str:
-    if ref is None or ref.durum != ReportStatus.INDIRILDI:
-        return "-"
-    if ref.tsrs_uyumlu is None:
-        return "Bilinmiyor"
-    return "Evet" if ref.tsrs_uyumlu else "Hayır"
-
-
 def _write_ham_bulgular(
     ws: Worksheet,
     companies_by_kod: dict[str, Company],
@@ -61,9 +53,8 @@ def _write_ham_bulgular(
     headers = [
         "Şirket Kodu", "Şirket Ünvanı", "Yıl", "Rapor Türü", "Sayfa No",
         "Eşleşen Terim", "Bağlam Alıntısı", "Olgunluk Sinyali", "Kategori No",
-        "TSRS Uyumlu mu?",
     ]
-    widths = [12, 45, 8, 20, 10, 22, 70, 24, 12, 14]
+    widths = [12, 45, 8, 20, 10, 22, 70, 24, 12]
     _write_header(ws, headers, widths)
 
     row_idx = 2
@@ -78,8 +69,6 @@ def _write_ham_bulgular(
         alinti_cell.alignment = _WRAP
         ws.cell(row=row_idx, column=8, value=tag_finding(f).value)
         ws.cell(row=row_idx, column=9, value=f.kategori_no)
-        ref = manifest_by_key.get((f.kod, f.yil, f.rapor_turu))
-        ws.cell(row=row_idx, column=10, value=_tsrs_str(ref))
         row_idx += 1
 
 
@@ -113,10 +102,10 @@ def _write_ozet(
 ) -> None:
     headers = [
         "Şirket Kodu", "Şirket Ünvanı", "Yıl", "Rapor Türü", "Rapor Durumu",
-        "TSRS Uyumlu mu?", "Olgunluk Etiketi", "Kategori Kapsamı (1-15)", "Gerekçe",
+        "Olgunluk Etiketi", "Kategori Kapsamı (1-15)", "Gerekçe",
         "Kaynak Türü", "Kaynak URL", "Manuel Teyit Notu",
     ]
-    widths = [12, 45, 8, 20, 14, 13, 24, 22, 45, 16, 45, 30]
+    widths = [12, 45, 8, 20, 14, 24, 22, 45, 16, 45, 30]
     _write_header(ws, headers, widths)
 
     row_idx = 2
@@ -124,25 +113,23 @@ def _write_ozet(
         durum = ref.durum.value if ref else ReportStatus.BULUNMADI.value
         etiket = maturity.etiket.value if maturity else (OlgunlukEtiketi.ACIKLAMA_YOK.value if durum == ReportStatus.INDIRILDI.value else "-")
         kategori_str = ", ".join(f"Kategori {n}" for n in maturity.kategori_kapsami) if maturity else ""
-        tsrs_str = _tsrs_str(ref)
 
         ws.cell(row=row_idx, column=1, value=company.kod)
         ws.cell(row=row_idx, column=2, value=company.unvan)
         ws.cell(row=row_idx, column=3, value=yil)
         ws.cell(row=row_idx, column=4, value=rapor_turu)
         ws.cell(row=row_idx, column=5, value=durum)
-        ws.cell(row=row_idx, column=6, value=tsrs_str)
-        ws.cell(row=row_idx, column=7, value=etiket)
-        ws.cell(row=row_idx, column=8, value=kategori_str)
-        gerekce_cell = ws.cell(row=row_idx, column=9, value=maturity.gerekce if maturity else "")
+        ws.cell(row=row_idx, column=6, value=etiket)
+        ws.cell(row=row_idx, column=7, value=kategori_str)
+        gerekce_cell = ws.cell(row=row_idx, column=8, value=maturity.gerekce if maturity else "")
         gerekce_cell.alignment = _WRAP
-        ws.cell(row=row_idx, column=10, value=ref.kaynak_turu if ref else "")
+        ws.cell(row=row_idx, column=9, value=ref.kaynak_turu if ref else "")
         if ref and ref.kaynak_url:
-            url_cell = ws.cell(row=row_idx, column=11, value=ref.kaynak_url)
+            url_cell = ws.cell(row=row_idx, column=10, value=ref.kaynak_url)
             url_cell.hyperlink = ref.kaynak_url
             url_cell.font = Font(color="FF0563C1", underline="single")
         note = maturity.manuel_teyit_notu if maturity else (config.MATURITY_REVIEW_NOTE if durum == ReportStatus.INDIRILDI.value else "")
-        ws.cell(row=row_idx, column=12, value=note)
+        ws.cell(row=row_idx, column=11, value=note)
         row_idx += 1
 
 
